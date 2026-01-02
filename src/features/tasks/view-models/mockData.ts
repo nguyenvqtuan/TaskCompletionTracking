@@ -1,51 +1,50 @@
-import { Task, User } from "../types";
+import { Task } from "../../../domain/entities/Task";
+import { TaskStatus } from "../../../domain/enums/TaskStatus";
+import { TaskPriority } from "../../../domain/enums/TaskPriority";
 
-const MOCK_USERS: User[] = [
-    { id: 'u1', name: 'Alex' },
-    { id: 'u2', name: 'Sam' },
-    { id: 'u3', name: 'Jordan' },
-];
+
+
 
 export const MOCK_TASKS: Task[] = [
-    {
+    Task.reconstitute({
         id: 't1',
         title: 'Design System Audit',
         description: 'Review current component usage and identify inconsistencies.',
-        status: 'in_progress',
-        priority: 'high',
+        status: TaskStatus.IN_PROGRESS,
+        priority: TaskPriority.HIGH,
         progress: 45,
-        assignee: MOCK_USERS[0],
-        createdAt: new Date().toISOString(),
-        dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
-    },
-    {
+        // Assignee is not part of Task entity yet
+        createdAt: new Date(),
+        dueDate: new Date(Date.now() + 86400000 * 2),
+    }),
+    Task.reconstitute({
         id: 't2',
         title: 'Setup CI/CD Pipeline',
         description: 'Configure GitHub Actions for automated testing and deployment.',
-        status: 'todo',
-        priority: 'medium',
+        status: TaskStatus.TODO,
+        priority: TaskPriority.MEDIUM,
         progress: 0,
-        assignee: MOCK_USERS[1],
-        createdAt: new Date().toISOString(),
-    },
-    {
+        createdAt: new Date(),
+        dueDate: null,
+    }),
+    Task.reconstitute({
         id: 't3',
         title: 'User API Integration',
         description: 'Connect frontend to the new User Service endpoints.',
-        status: 'done',
-        priority: 'high',
+        status: TaskStatus.DONE,
+        priority: TaskPriority.HIGH,
         progress: 100,
-        assignee: MOCK_USERS[2],
-        createdAt: new Date().toISOString(),
-    },
-    {
+        createdAt: new Date(),
+        dueDate: new Date(),
+    }),
+    Task.reconstitute({
         id: 't4',
         title: 'Fix Navigation Bug',
         description: 'Menu does not close on mobile when clicking outside.',
-        status: 'review',
-        priority: 'low',
+        status: TaskStatus.REVIEW,
+        priority: TaskPriority.LOW,
         progress: 90,
-        assignee: MOCK_USERS[0],
-        createdAt: new Date().toISOString(),
-    },
+        createdAt: new Date(),
+        dueDate: new Date(),
+    }),
 ];

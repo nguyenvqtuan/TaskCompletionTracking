@@ -1,6 +1,6 @@
-import { Task } from "../../domain/entities/Task";
-import { TaskRepository } from "../interfaces/repositories/TaskRepository";
-import { CreateTaskDTO } from "../dtos/TaskDTOs";
+import { Task } from "@/domain/entities/Task";
+import { TaskRepository } from "@/application/interfaces/repositories/TaskRepository";
+import { CreateTaskDTO } from "@/application/dtos/TaskDTOs";
 
 export class CreateTask {
     constructor(private taskRepository: TaskRepository) { }

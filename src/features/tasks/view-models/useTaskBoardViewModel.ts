@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { Task, TaskStatus, TaskFilters } from '../types';
-import { TaskRepository } from '../repositories/TaskRepository';
+import { Task, TaskStatus, TaskFilters, TaskPriority } from '@/features/tasks/types';
+import { TaskRepository } from '@/features/tasks/repositories/TaskRepository';
 
 // View Mode type
 export type ViewMode = 'grid' | 'list';
@@ -43,64 +43,74 @@ export function useTaskBoardViewModel(repository: TaskRepository) {
         const taskToUpdate = tasks.find(t => t.id === taskId);
         if (!taskToUpdate) return;
 
-        let newStatus = taskToUpdate.status;
+        // Clone to avoid mutating state directly -> React needs new reference
+        const updatedTask = Task.reconstitute(taskToUpdate.toJSON());
+
+        let newStatus = updatedTask.status;
 
         // Auto-status logic
         if (clampedProgress === 100) {
-            newStatus = 'done';
+            newStatus = TaskStatus.DONE;
         } else if (clampedProgress === 0) {
-            newStatus = 'todo';
-        } else if (taskToUpdate.status === 'todo' || taskToUpdate.status === 'done') {
-            newStatus = 'in_progress';
+            newStatus = TaskStatus.TODO;
+        } else if (updatedTask.status === TaskStatus.TODO || updatedTask.status === TaskStatus.DONE) {
+            newStatus = TaskStatus.IN_PROGRESS;
         }
 
-        const updatedTask = {
-            ...taskToUpdate,
-            progress: clampedProgress,
-            status: newStatus
-        };
-
-        // Optimistic Update
-        setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
-
-        // Persist
         try {
+            // Apply updates to the entity
+            updatedTask.setProgress(clampedProgress);
+            if (newStatus !== updatedTask.status) {
+                updatedTask.changeStatus(newStatus);
+            }
+
+            // Optimistic Update
+            setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
+
+            // Persist
             await repository.update(updatedTask);
         } catch (error) {
             console.error("Failed to update task progress", error);
-            // Revert on failure (omitted for brevity in this MVP, but best practice)
+            // Revert logic would go here
+            // For now we rely on next fetch or simple ignore, 
+            // but strictly we should revert 'tasks' state locally.
+            setTasks(prev => prev.map(t => t.id === taskId ? taskToUpdate : t));
         }
     }, [tasks, repository]);
 
     const moveTask = useCallback(async (taskId: string, newStatus: TaskStatus) => {
         const STATUS_PROGRESS_MAP: Record<TaskStatus, number> = {
-            'todo': 0,
-            'in_progress': 25,
-            'review': 80,
-            'done': 100
+            [TaskStatus.TODO]: 0,
+            [TaskStatus.IN_PROGRESS]: 25,
+            [TaskStatus.REVIEW]: 80,
+            [TaskStatus.DONE]: 100
         };
 
         const taskToUpdate = tasks.find(t => t.id === taskId);
         if (!taskToUpdate) return;
 
-        const updatedTask = {
-            ...taskToUpdate,
-            status: newStatus,
-            progress: STATUS_PROGRESS_MAP[newStatus]
-        };
+        const updatedTask = Task.reconstitute(taskToUpdate.toJSON());
 
-        // Optimistic Update
-        setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
-
-        // Persist
         try {
+            updatedTask.changeStatus(newStatus);
+            // derived progress update
+            const newProgress = STATUS_PROGRESS_MAP[newStatus];
+            updatedTask.setProgress(newProgress);
+
+            // Optimistic Update
+            setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
+
+            // Persist
             await repository.update(updatedTask);
         } catch (error) {
             console.error("Failed to move task", error);
+            setTasks(prev => prev.map(t => t.id === taskId ? taskToUpdate : t));
         }
+
     }, [tasks, repository]);
 
     const deleteTask = useCallback(async (taskId: string) => {
+        const previousTasks = [...tasks];
         // Optimistic Update
         setTasks(prev => prev.filter(t => t.id !== taskId));
 
@@ -108,15 +118,18 @@ export function useTaskBoardViewModel(repository: TaskRepository) {
             await repository.delete(taskId);
         } catch (error) {
             console.error("Failed to delete task", error);
+            setTasks(previousTasks);
         }
-    }, [repository]);
+    }, [tasks, repository]);
 
-    const createTask = useCallback(async (newTask: Omit<Task, 'id' | 'createdAt'>) => {
-        const task: Task = {
-            ...newTask,
-            id: crypto.randomUUID(),
-            createdAt: new Date().toISOString(),
-        };
+    const createTask = useCallback(async (newTaskProps: { title: string, description: string, priority: TaskPriority, dueDate?: Date | null }) => {
+        // Use Factory method
+        const task = Task.create(
+            newTaskProps.title,
+            newTaskProps.description,
+            newTaskProps.priority, // Assumed to be TaskPriority
+            newTaskProps.dueDate
+        );
 
         // Optimistic Update
         setTasks(prev => [task, ...prev]);
@@ -125,6 +138,7 @@ export function useTaskBoardViewModel(repository: TaskRepository) {
             await repository.create(task);
         } catch (error) {
             console.error("Failed to create task", error);
+            setTasks(prev => prev.filter(t => t.id !== task.id));
         }
     }, [repository]);
 
@@ -151,10 +165,10 @@ export function useTaskBoardViewModel(repository: TaskRepository) {
 
     // Grouping for Kanban Board
     const columns = useMemo(() => ({
-        todo: filteredTasks.filter(t => t.status === 'todo'),
-        in_progress: filteredTasks.filter(t => t.status === 'in_progress'),
-        review: filteredTasks.filter(t => t.status === 'review'),
-        done: filteredTasks.filter(t => t.status === 'done'),
+        [TaskStatus.TODO]: filteredTasks.filter(t => t.status === TaskStatus.TODO),
+        [TaskStatus.IN_PROGRESS]: filteredTasks.filter(t => t.status === TaskStatus.IN_PROGRESS),
+        [TaskStatus.REVIEW]: filteredTasks.filter(t => t.status === TaskStatus.REVIEW),
+        [TaskStatus.DONE]: filteredTasks.filter(t => t.status === TaskStatus.DONE),
     }), [filteredTasks]);
 
     return {

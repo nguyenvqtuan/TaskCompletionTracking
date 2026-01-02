@@ -1,4 +1,4 @@
-import { Task } from "../types";
+import { Task } from "../../../domain/entities/Task";
 
 export interface TaskRepository {
     getAll(): Promise<Task[]>;

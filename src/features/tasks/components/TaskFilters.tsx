@@ -1,6 +1,6 @@
 import { SearchBar } from "@/shared/components/ui/search-bar";
 import { Button } from "@/shared/components/ui/button";
-import { TaskFilters as FilterState, TaskPriority, TaskStatus } from "../types";
+import { TaskFilters as FilterState, TaskPriority, TaskStatus } from "@/features/tasks/types";
 import { X, LayoutGrid, List as ListIcon } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
 import { CustomSelect } from "@/shared/components/ui/select-custom";
@@ -15,16 +15,16 @@ interface TaskFiltersProps {
 }
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string; color: string }[] = [
-    { value: 'todo', label: 'To Do', color: 'bg-slate-400' },
-    { value: 'in_progress', label: 'In Progress', color: 'bg-blue-400' },
-    { value: 'review', label: 'In Review', color: 'bg-amber-400' },
-    { value: 'done', label: 'Done', color: 'bg-emerald-400' },
+    { value: TaskStatus.TODO, label: 'To Do', color: 'bg-slate-400' },
+    { value: TaskStatus.IN_PROGRESS, label: 'In Progress', color: 'bg-blue-400' },
+    { value: TaskStatus.REVIEW, label: 'In Review', color: 'bg-amber-400' },
+    { value: TaskStatus.DONE, label: 'Done', color: 'bg-emerald-400' },
 ];
 
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = [
-    { value: 'low', label: 'Low', color: 'bg-slate-400' },
-    { value: 'medium', label: 'Medium', color: 'bg-amber-400' },
-    { value: 'high', label: 'High', color: 'bg-red-400' },
+    { value: TaskPriority.LOW, label: 'Low', color: 'bg-slate-400' },
+    { value: TaskPriority.MEDIUM, label: 'Medium', color: 'bg-amber-400' },
+    { value: TaskPriority.HIGH, label: 'High', color: 'bg-red-400' },
 ];
 
 export function TaskFilters({ filters, onUpdate, viewMode, onViewModeChange, className }: TaskFiltersProps) {

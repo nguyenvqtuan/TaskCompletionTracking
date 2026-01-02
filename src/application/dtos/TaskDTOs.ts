@@ -1,5 +1,5 @@
-import { TaskPriority } from "../../domain/enums/TaskPriority";
-import { TaskStatus } from "../../domain/enums/TaskStatus";
+import { TaskPriority } from "@/domain/enums/TaskPriority";
+import { TaskStatus } from "@/domain/enums/TaskStatus";
 
 export interface CreateTaskDTO {
     title: string;

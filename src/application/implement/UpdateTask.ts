@@ -1,7 +1,7 @@
-import { Task } from "../../domain/entities/Task";
-import { TaskRepository } from "../interfaces/repositories/TaskRepository";
-import { UpdateTaskDTO } from "../dtos/TaskDTOs";
-import { DomainError } from "../../domain/errors/DomainError";
+import { Task } from "@/domain/entities/Task";
+import { TaskRepository } from "@/application/interfaces/repositories/TaskRepository";
+import { UpdateTaskDTO } from "@/application/dtos/TaskDTOs";
+import { DomainError } from "@/domain/errors/DomainError";
 
 export class UpdateTask {
     constructor(private taskRepository: TaskRepository) { }

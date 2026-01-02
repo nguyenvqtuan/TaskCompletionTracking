@@ -15,8 +15,8 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useDroppable } from "@dnd-kit/core";
 
 import { cn } from "@/shared/utils/cn";
-import { Task } from "../../../domain/entities/Task";
-import { TaskStatus } from "../../../domain/enums/TaskStatus";
+import { Task } from "@/domain/entities/Task";
+import { TaskStatus } from "@/domain/enums/TaskStatus";
 import { TaskItem } from "./TaskItem";
 import { SortableTaskItem } from "./SortableTaskItem";
 

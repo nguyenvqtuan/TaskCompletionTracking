@@ -1,4 +1,4 @@
-import { TaskRepository } from "../interfaces/repositories/TaskRepository";
+import { TaskRepository } from "@/application/interfaces/repositories/TaskRepository";
 
 export class DeleteTask {
     constructor(private taskRepository: TaskRepository) { }

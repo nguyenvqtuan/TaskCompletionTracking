@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Task } from "../../../domain/entities/Task";
+import { Task } from "@/domain/entities/Task";
 import { TaskItem } from "./TaskItem";
 
 interface SortableTaskItemProps {

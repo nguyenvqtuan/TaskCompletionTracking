@@ -1,4 +1,4 @@
-import { TaskStatus } from "../../domain/enums/TaskStatus";
+import { TaskStatus } from "@/domain/enums/TaskStatus";
 
 export class CalculateProgress {
     // Pure logic, static execution is fine, or instance.

@@ -1,6 +1,7 @@
 import { Calendar, MoreHorizontal } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
-import { Task } from "../../../domain/entities/Task";
+import { Task } from "@/domain/entities/Task";
+import { TaskPriority } from "@/domain/enums/TaskPriority";
 import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -11,10 +12,12 @@ interface TaskItemProps {
     task: Task;
 }
 
+
+
 const PRIORITY_STYLES = {
-    low: "text-slate-600 border-slate-200 bg-slate-100",
-    medium: "text-orange-700 border-orange-200 bg-orange-100",
-    high: "text-red-700 border-red-200 bg-red-100",
+    [TaskPriority.LOW]: "text-slate-600 border-slate-200 bg-slate-100",
+    [TaskPriority.MEDIUM]: "text-orange-700 border-orange-200 bg-orange-100",
+    [TaskPriority.HIGH]: "text-red-700 border-red-200 bg-red-100",
 };
 
 export function TaskItem({ task }: TaskItemProps) {

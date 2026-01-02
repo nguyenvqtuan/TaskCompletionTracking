@@ -1,5 +1,5 @@
-import { Task, TaskProps } from "../../../domain/entities/Task";
-import { TaskRepository } from "../../../application/interfaces/repositories/TaskRepository";
+import { Task, TaskProps } from "@/domain/entities/Task";
+import { TaskRepository } from "@/application/interfaces/repositories/TaskRepository";
 
 const STORAGE_KEY = 'task-clean-arch-db';
 

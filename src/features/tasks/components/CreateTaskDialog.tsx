@@ -2,17 +2,24 @@ import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
-import { Task, TaskPriority } from "@/features/tasks/types";
+import { TaskPriority } from "@/features/tasks/types";
+
+interface CreateTaskInput {
+    title: string;
+    description: string;
+    priority: TaskPriority;
+    dueDate?: Date | null;
+}
 
 interface CreateTaskDialogProps {
-    onCreate: (task: Omit<Task, 'id' | 'createdAt'>) => void;
+    onCreate: (task: CreateTaskInput) => void;
 }
 
 export function CreateTaskDialog({ onCreate }: CreateTaskDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [priority, setPriority] = useState<TaskPriority>('medium');
+    const [priority, setPriority] = useState<TaskPriority>(TaskPriority.MEDIUM);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -22,14 +29,13 @@ export function CreateTaskDialog({ onCreate }: CreateTaskDialogProps) {
             title,
             description,
             priority,
-            status: 'todo',
-            progress: 0
+            dueDate: null // Default for now
         });
 
         // Reset and close
         setTitle("");
         setDescription("");
-        setPriority('medium');
+        setPriority(TaskPriority.MEDIUM);
         setIsOpen(false);
     }
 
@@ -84,7 +90,7 @@ export function CreateTaskDialog({ onCreate }: CreateTaskDialogProps) {
                         <div className="space-y-2">
                             <label className="text-sm font-medium leading-none">Priority</label>
                             <div className="flex gap-2">
-                                {(['low', 'medium', 'high'] as const).map(p => (
+                                {Object.values(TaskPriority).map(p => (
                                     <button
                                         key={p}
                                         type="button"
