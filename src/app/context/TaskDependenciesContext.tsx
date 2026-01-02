@@ -1,9 +1,9 @@
 import { createContext, useContext, useMemo } from "react";
-import { CreateTask } from "../../application/use-cases/CreateTask";
-import { UpdateTask } from "../../application/use-cases/UpdateTask";
-import { DeleteTask } from "../../application/use-cases/DeleteTask";
-import { GetTasks } from "../../application/use-cases/GetTasks";
-import { CalculateProgress } from "../../application/use-cases/CalculateProgress";
+import { CreateTask } from "../../application/implement/CreateTask";
+import { UpdateTask } from "../../application/implement/UpdateTask";
+import { DeleteTask } from "../../application/implement/DeleteTask";
+import { GetTasks } from "../../application/implement/GetTasks";
+import { CalculateProgress } from "../../application/implement/CalculateProgress";
 import { LocalStorageTaskRepository } from "../../infrastructure/repositories/LocalStorageTaskRepository";
 
 interface TaskDependencies {
@@ -16,6 +16,7 @@ interface TaskDependencies {
 
 const TaskDependenciesContext = createContext<TaskDependencies | null>(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTaskDependencies() {
     const context = useContext(TaskDependenciesContext);
     if (!context) {

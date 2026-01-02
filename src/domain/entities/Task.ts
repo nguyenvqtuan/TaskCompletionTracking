@@ -2,7 +2,7 @@ import { TaskStatus } from "../enums/TaskStatus";
 import { TaskPriority } from "../enums/TaskPriority";
 import { ValidationError } from "../errors/DomainError";
 
-interface TaskProps {
+export interface TaskProps {
     id: string;
     title: string;
     description: string;

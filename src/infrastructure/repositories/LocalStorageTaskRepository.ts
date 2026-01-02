@@ -1,7 +1,13 @@
-import { Task } from "../../../domain/entities/Task";
+import { Task, TaskProps } from "../../../domain/entities/Task";
 import { TaskRepository } from "../../../application/interfaces/repositories/TaskRepository";
 
 const STORAGE_KEY = 'task-clean-arch-db';
+
+// JSON serialization turns Dates into strings
+type StoredTaskProps = Omit<TaskProps, 'dueDate' | 'createdAt'> & {
+    dueDate: string | null;
+    createdAt: string;
+};
 
 export class LocalStorageTaskRepository implements TaskRepository {
 
@@ -10,8 +16,8 @@ export class LocalStorageTaskRepository implements TaskRepository {
         if (!data) return [];
 
         try {
-            const rawTasks = JSON.parse(data);
-            return rawTasks.map((raw: any) => this.mapToEntity(raw));
+            const rawTasks = JSON.parse(data) as StoredTaskProps[];
+            return rawTasks.map((raw) => this.mapToEntity(raw));
         } catch (error) {
             console.error("Failed to parse tasks from storage", error);
             return [];
@@ -53,7 +59,7 @@ export class LocalStorageTaskRepository implements TaskRepository {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
     }
 
-    private mapToEntity(raw: any): Task {
+    private mapToEntity(raw: StoredTaskProps): Task {
         // We need to restore Date objects because JSON makes them strings
         return Task.reconstitute({
             ...raw,
