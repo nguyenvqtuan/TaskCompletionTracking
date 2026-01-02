@@ -1,6 +1,7 @@
 import { TaskStatus } from "../enums/TaskStatus";
 import { TaskPriority } from "../enums/TaskPriority";
 import { ValidationError } from "../errors/DomainError";
+import { Comment, CommentProps } from "./Comment";
 
 export interface TaskProps {
   id: string;
@@ -11,6 +12,8 @@ export interface TaskProps {
   dueDate: Date | null;
   createdAt: Date;
   progress: number;
+  comments: CommentProps[];
+  sprintId?: string;
 }
 
 export class Task {
@@ -19,7 +22,6 @@ export class Task {
   }
 
   // Factory method for creating new tasks
-  // Enforces creation rules (e.g. required title)
   static create(
     title: string,
     description: string = "",
@@ -27,19 +29,19 @@ export class Task {
     dueDate: Date | null = null,
   ): Task {
     return new Task({
-      id: crypto.randomUUID(), // In a real app, ID might come from DB or be a ValueObject
+      id: crypto.randomUUID(),
       title,
       description,
-      status: TaskStatus.TODO, // New tasks always start as TODO
+      status: TaskStatus.TODO,
       priority,
       dueDate,
       createdAt: new Date(),
       progress: 0,
+      comments: [],
+      sprintId: undefined,
     });
   }
 
-  // Method to reconstitute from Persistence/Repository
-  // Bypasses creation defaults (like status=TODO)
   static reconstitute(props: TaskProps): Task {
     return new Task(props);
   }
@@ -47,8 +49,6 @@ export class Task {
   // Domain Behaviors
 
   public changeStatus(newStatus: TaskStatus): void {
-    // Here we could add transition rules
-    // e.g., if (this.props.status === TaskStatus.DONE && newStatus === TaskStatus.TODO) throw ...
     this.props.status = newStatus;
   }
 
@@ -66,13 +66,25 @@ export class Task {
     this.props.progress = progress;
   }
 
+  public addComment(comment: Comment): void {
+    this.props.comments.push(comment.toJSON());
+  }
+
+  public assignToSprint(sprintId: string): void {
+    this.props.sprintId = sprintId;
+  }
+
+  public removeFromSprint(): void {
+    this.props.sprintId = undefined;
+  }
+
   private validate(): void {
     if (!this.props.title || this.props.title.trim().length < 3) {
       throw new ValidationError("Task title must be at least 3 characters long.");
     }
   }
 
-  // Getters (Immutable access)
+  // Getters
   get id(): string {
     return this.props.id;
   }
@@ -97,8 +109,14 @@ export class Task {
   get progress(): number {
     return this.props.progress;
   }
+  get sprintId(): string | undefined {
+    return this.props.sprintId;
+  }
 
-  // For serialization if needed
+  get comments(): Comment[] {
+    return this.props.comments.map((c) => Comment.reconstitute(c));
+  }
+
   public toJSON(): TaskProps {
     return { ...this.props };
   }

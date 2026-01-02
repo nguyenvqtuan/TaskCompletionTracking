@@ -1,11 +1,19 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { Task, TaskStatus, TaskFilters, TaskPriority } from "@/features/tasks/types";
-import { TaskRepository } from "@/features/tasks/repositories/TaskRepository";
+import { useTaskDependencies } from "@/app/context/TaskDependenciesContext";
 
 // View Mode type
 export type ViewMode = "grid" | "list";
 
-export function useTaskBoardViewModel(repository: TaskRepository) {
+export function useTaskBoardViewModel() {
+  const {
+    getTasks,
+    createTask: createTaskUseCase,
+    updateTask: updateTaskUseCase,
+    deleteTask: deleteTaskUseCase,
+    calculateProgress,
+  } = useTaskDependencies();
+
   // 1. Core State
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,7 +30,7 @@ export function useTaskBoardViewModel(repository: TaskRepository) {
   useEffect(() => {
     const loadTasks = async () => {
       try {
-        const data = await repository.getAll();
+        const data = await getTasks.execute();
         setTasks(data);
       } catch (error) {
         console.error("Failed to load tasks", error);
@@ -31,7 +39,7 @@ export function useTaskBoardViewModel(repository: TaskRepository) {
       }
     };
     loadTasks();
-  }, [repository]);
+  }, [getTasks]);
 
   /**
    * Updates a task's progress and automatically transitions status
@@ -40,117 +48,105 @@ export function useTaskBoardViewModel(repository: TaskRepository) {
     async (taskId: string, newProgress: number) => {
       const clampedProgress = Math.min(100, Math.max(0, newProgress));
 
-      // Find task to update
+      // Find task to update (for optimistic rollback)
       const taskToUpdate = tasks.find((t) => t.id === taskId);
       if (!taskToUpdate) return;
 
-      // Clone to avoid mutating state directly -> React needs new reference
-      const updatedTask = Task.reconstitute(taskToUpdate.toJSON());
-
-      let newStatus = updatedTask.status;
-
-      // Auto-status logic
-      if (clampedProgress === 100) {
-        newStatus = TaskStatus.DONE;
-      } else if (clampedProgress === 0) {
-        newStatus = TaskStatus.TODO;
-      } else if (updatedTask.status === TaskStatus.TODO || updatedTask.status === TaskStatus.DONE) {
+      // Calculate new Status logic (duplicated from CalculateProgress potentially, or local rule)
+      // Ideally we should use a Domain Service or Use Case for this specific logic if it's complex.
+      // For now, we keep the auto-status logic here as it's UI-specific "smart" behavior.
+      let newStatus = taskToUpdate.status;
+      if (clampedProgress === 100) newStatus = TaskStatus.DONE;
+      else if (clampedProgress === 0) newStatus = TaskStatus.TODO;
+      else if (taskToUpdate.status === TaskStatus.TODO || taskToUpdate.status === TaskStatus.DONE) {
         newStatus = TaskStatus.IN_PROGRESS;
       }
 
+      // Optimistic Update
+      const optimisticTask = Task.reconstitute(taskToUpdate.toJSON());
+      optimisticTask.setProgress(clampedProgress);
+      if (newStatus !== optimisticTask.status) optimisticTask.changeStatus(newStatus);
+
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? optimisticTask : t)));
+
       try {
-        // Apply updates to the entity
-        updatedTask.setProgress(clampedProgress);
-        if (newStatus !== updatedTask.status) {
-          updatedTask.changeStatus(newStatus);
-        }
-
-        // Optimistic Update
-        setTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
-
-        // Persist
-        await repository.update(updatedTask);
+        await updateTaskUseCase.execute({
+          id: taskId,
+          progress: clampedProgress,
+          status: newStatus,
+        });
       } catch (error) {
         console.error("Failed to update task progress", error);
-        // Revert logic would go here
-        // For now we rely on next fetch or simple ignore,
-        // but strictly we should revert 'tasks' state locally.
         setTasks((prev) => prev.map((t) => (t.id === taskId ? taskToUpdate : t)));
       }
     },
-    [tasks, repository],
+    [tasks, updateTaskUseCase],
   );
 
   const moveTask = useCallback(
     async (taskId: string, newStatus: TaskStatus) => {
-      const STATUS_PROGRESS_MAP: Record<TaskStatus, number> = {
-        [TaskStatus.TODO]: 0,
-        [TaskStatus.IN_PROGRESS]: 25,
-        [TaskStatus.REVIEW]: 80,
-        [TaskStatus.DONE]: 100,
-      };
-
+      console.log("ViewModel moveTask called:", taskId, newStatus);
       const taskToUpdate = tasks.find((t) => t.id === taskId);
       if (!taskToUpdate) return;
 
-      const updatedTask = Task.reconstitute(taskToUpdate.toJSON());
+      // 1. Calculate new progress
+      const newProgress = calculateProgress.execute(newStatus);
+
+      // 2. Optimistic Update
+      const optimisticTask = Task.reconstitute(taskToUpdate.toJSON());
+      optimisticTask.changeStatus(newStatus);
+      optimisticTask.setProgress(newProgress);
+
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? optimisticTask : t)));
 
       try {
-        updatedTask.changeStatus(newStatus);
-        // derived progress update
-        const newProgress = STATUS_PROGRESS_MAP[newStatus];
-        updatedTask.setProgress(newProgress);
-
-        // Optimistic Update
-        setTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
-
-        // Persist
-        await repository.update(updatedTask);
+        // 3. Persist
+        await updateTaskUseCase.execute({
+          id: taskId,
+          status: newStatus,
+          progress: newProgress,
+        });
       } catch (error) {
         console.error("Failed to move task", error);
         setTasks((prev) => prev.map((t) => (t.id === taskId ? taskToUpdate : t)));
       }
     },
-    [tasks, repository],
+    [tasks, calculateProgress, updateTaskUseCase],
   );
 
   const deleteTask = useCallback(
     async (taskId: string) => {
       const previousTasks = [...tasks];
-      // Optimistic Update
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
 
       try {
-        await repository.delete(taskId);
+        // Note: Assuming Admin check is done in Use Case or ignored here if not strictly required for Board (or we should handle error)
+        // If we want to support RBAC on Board, we need to handle the error processing.
+        await deleteTaskUseCase.execute(taskId); // We might need to pass user here if RBAC enabled!
       } catch (error) {
         console.error("Failed to delete task", error);
+        alert("Failed to delete: " + (error as Error).message); // Simple feedback
         setTasks(previousTasks);
       }
     },
-    [tasks, repository],
+    [tasks, deleteTaskUseCase],
   );
 
   const createTask = useCallback(
     async (newTaskProps: { title: string; description: string; priority: TaskPriority; dueDate?: Date | null }) => {
-      // Use Factory method
-      const task = Task.create(
-        newTaskProps.title,
-        newTaskProps.description,
-        newTaskProps.priority, // Assumed to be TaskPriority
-        newTaskProps.dueDate,
-      );
-
-      // Optimistic Update
-      setTasks((prev) => [task, ...prev]);
-
       try {
-        await repository.create(task);
+        const newTask = await createTaskUseCase.execute({
+          title: newTaskProps.title,
+          description: newTaskProps.description,
+          priority: newTaskProps.priority,
+          dueDate: newTaskProps.dueDate,
+        });
+        setTasks((prev) => [newTask, ...prev]);
       } catch (error) {
         console.error("Failed to create task", error);
-        setTasks((prev) => prev.filter((t) => t.id !== task.id));
       }
     },
-    [repository],
+    [createTaskUseCase],
   );
 
   const updateFilter = useCallback((updates: Partial<TaskFilters>) => {

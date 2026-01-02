@@ -1,18 +1,15 @@
-import { useMemo } from "react";
+// import { useMemo } from "react";
 import { useTaskBoardViewModel } from "@/features/tasks/view-models/useTaskBoardViewModel";
 import { CreateTaskDialog } from "@/features/tasks/components/CreateTaskDialog";
 import { TaskList } from "@/features/tasks/components/TaskList";
 import { TaskFilters } from "@/features/tasks/components/TaskFilters";
-import { LocalStorageTaskRepository } from "@/features/tasks/repositories/LocalStorageTaskRepository";
+import { Button } from "@/shared/components/ui/button";
 
 export const TaskBoardPage = () => {
-  // 0. DI Layer: Inject Repository
-  const repository = useMemo(() => new LocalStorageTaskRepository(), []);
-
   // 1. Logic Layer: ViewModel
   // The page is responsible for fetching data and handling view-level interactions
   const { columns, isLoading, filters, setFilter, moveTask, updateProgress, createTask, viewMode, setViewMode } =
-    useTaskBoardViewModel(repository);
+    useTaskBoardViewModel();
 
   if (isLoading) {
     return (
@@ -34,6 +31,12 @@ export const TaskBoardPage = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => (window.location.href = "/planning")}>
+            Planning
+          </Button>
+          <Button variant="outline" onClick={() => (window.location.href = "/dashboard")}>
+            Dashboard
+          </Button>
           <TaskFilters filters={filters} onUpdate={setFilter} viewMode={viewMode} onViewModeChange={setViewMode} />
 
           {/* Create Dialog */}

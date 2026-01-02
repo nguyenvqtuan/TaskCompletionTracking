@@ -7,6 +7,7 @@ interface SelectOption<T extends string> {
   value: T | "all";
   label: string;
   icon?: React.ReactNode;
+  className?: string; // For custom styling of the option
 }
 
 interface CustomSelectProps<T extends string> {
@@ -16,6 +17,7 @@ interface CustomSelectProps<T extends string> {
   placeholder?: string;
   label?: string; // Optional prefix label like "Status:"
   className?: string;
+  includeAllOption?: boolean;
 }
 
 export function CustomSelect<T extends string>({
@@ -25,6 +27,7 @@ export function CustomSelect<T extends string>({
   placeholder = "Select...",
   label,
   className,
+  includeAllOption = true,
 }: CustomSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -82,21 +85,25 @@ export function CustomSelect<T extends string>({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "relative flex items-center justify-between w-full h-9 px-3 py-2 text-sm bg-background border rounded-md transition-all hover:bg-accent hover:text-accent-foreground items-center gap-2",
-          isOpen && "ring-2 ring-ring ring-offset-0 border-transparent",
-          value !== "all" && "bg-secondary/50 border-secondary-foreground/20 text-secondary-foreground",
+          "relative flex items-center justify-between w-full h-10 px-4 py-2 text-sm bg-background border rounded-lg transition-all duration-200 hover:bg-accent/50 hover:border-accent hover:shadow-sm group", // Increased height, rounded-lg, hover effects
+          isOpen && "ring-2 ring-primary/20 border-primary",
+          value !== "all" && "bg-secondary/30 border-secondary-foreground/10 text-secondary-foreground font-medium",
         )}
       >
         <div className="flex items-center gap-2 truncate max-w-full">
-          {label && <span className="opacity-50 font-normal flex-shrink-0">{label}</span>}
-          <span className="font-medium truncate block">
-            {selectedOption ? selectedOption.label : value === "all" ? `All ${label || ""} ` : placeholder}
+          {label && <span className="text-muted-foreground font-normal flex-shrink-0">{label}</span>}
+          <span className={cn("truncate block", value !== "all" && "text-foreground")}>
+            {selectedOption
+              ? selectedOption.label
+              : value === "all" && includeAllOption
+                ? `All ${label || ""} `
+                : placeholder}
           </span>
         </div>
         <ChevronDown
           className={cn(
-            "h-4 w-4 opacity-50 transition-transform duration-200 flex-shrink-0",
-            isOpen && "transform rotate-180",
+            "h-4 w-4 text-muted-foreground transition-transform duration-300 ease-in-out flex-shrink-0 group-hover:text-foreground",
+            isOpen && "transform rotate-180 text-primary",
           )}
         />
       </button>
@@ -106,36 +113,42 @@ export function CustomSelect<T extends string>({
         createPortal(
           <div
             ref={dropdownRef}
-            className="absolute z-50 mt-1 bg-popover text-popover-foreground border rounded-lg shadow-lg animate-in fade-in-0 zoom-in-95"
+            className="absolute z-50 mt-2 bg-popover/95 backdrop-blur-sm text-popover-foreground border border-border/50 rounded-xl shadow-xl animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
             style={{
-              top: position.top + 4,
+              top: position.top + 6,
               left: position.left,
-              width: Math.max(position.width, 180), // Min width for better readability
+              width: Math.max(position.width, 220),
             }}
           >
-            <div className="p-1 max-h-[300px] overflow-auto scrollbar-hide">
-              <div
-                className={cn(
-                  "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-                  value === "all" && "bg-accent text-accent-foreground",
-                )}
-                onClick={() => handleSelect("all")}
-              >
-                <span className="flex-1 truncate">All {label}</span>
-                {value === "all" && <Check className="ml-auto h-4 w-4" />}
-              </div>
+            <div className="p-1.5 max-h-[300px] overflow-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+              {includeAllOption && (
+                <div
+                  className={cn(
+                    "relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-sm outline-none transition-all hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 mb-1",
+                    value === "all" && "bg-accent/80 text-accent-foreground font-medium",
+                  )}
+                  onClick={() => handleSelect("all")}
+                >
+                  <span className="flex-1 truncate">All {label}</span>
+                  {value === "all" && <Check className="ml-auto h-4 w-4 text-primary" />}
+                </div>
+              )}
 
               {options.map((option) => (
                 <div
                   key={option.value}
                   className={cn(
-                    "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-                    value === option.value && "bg-accent text-accent-foreground",
+                    "relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-sm outline-none transition-all hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 mb-0.5 last:mb-0",
+                    value === option.value && "bg-accent/80 text-accent-foreground font-medium",
+                    option.className,
                   )}
                   onClick={() => handleSelect(option.value)}
                 >
-                  <span className="flex-1 truncate">{option.label}</span>
-                  {value === option.value && <Check className="ml-auto h-4 w-4" />}
+                  <span className="flex-1 truncate flex items-center gap-2">
+                    {option.icon}
+                    {option.label}
+                  </span>
+                  {value === option.value && <Check className="ml-auto h-4 w-4 text-primary" />}
                 </div>
               ))}
             </div>

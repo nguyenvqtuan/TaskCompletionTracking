@@ -4,7 +4,13 @@ import { UpdateTask } from "../../application/implement/UpdateTask";
 import { DeleteTask } from "../../application/implement/DeleteTask";
 import { GetTasks } from "../../application/implement/GetTasks";
 import { CalculateProgress } from "../../application/implement/CalculateProgress";
+import { AddComment } from "../../application/implement/AddComment";
+import { GetSprints } from "../../application/implement/GetSprints";
+import { CreateSprint } from "../../application/implement/CreateSprint";
 import { LocalStorageTaskRepository } from "../../infrastructure/repositories/LocalStorageTaskRepository";
+import { LocalStorageSprintRepository } from "../../infrastructure/repositories/LocalStorageSprintRepository";
+
+import { GetTaskStatistics } from "../../application/implement/GetTaskStatistics";
 
 interface TaskDependencies {
   createTask: CreateTask;
@@ -12,6 +18,10 @@ interface TaskDependencies {
   deleteTask: DeleteTask;
   getTasks: GetTasks;
   calculateProgress: CalculateProgress;
+  addComment: AddComment;
+  getSprints: GetSprints;
+  createSprint: CreateSprint;
+  getTaskStatistics: GetTaskStatistics;
 }
 
 const TaskDependenciesContext = createContext<TaskDependencies | null>(null);
@@ -29,6 +39,7 @@ export function TaskDependenciesProvider({ children }: { children: React.ReactNo
   const dependencies = useMemo(() => {
     // Composition Root: Wiring everything together
     const taskRepository = new LocalStorageTaskRepository();
+    const sprintRepository = new LocalStorageSprintRepository();
 
     return {
       createTask: new CreateTask(taskRepository),
@@ -36,6 +47,10 @@ export function TaskDependenciesProvider({ children }: { children: React.ReactNo
       deleteTask: new DeleteTask(taskRepository),
       getTasks: new GetTasks(taskRepository),
       calculateProgress: new CalculateProgress(),
+      addComment: new AddComment(taskRepository),
+      getSprints: new GetSprints(sprintRepository),
+      createSprint: new CreateSprint(sprintRepository),
+      getTaskStatistics: new GetTaskStatistics(taskRepository),
     };
   }, []);
 

@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Task } from "../../../domain/entities/Task";
 import { CreateTaskDTO, UpdateTaskDTO } from "../../../application/dtos/TaskDTOs";
 import { useTaskDependencies } from "../../../app/context/TaskDependenciesContext";
+import { useAuth } from "../../../app/context/AuthContext";
 import { TaskStatus } from "../../../domain/enums/TaskStatus";
 
 export function useTasks() {
-  const { createTask, getTasks, updateTask, deleteTask, calculateProgress } = useTaskDependencies();
+  const { createTask, getTasks, updateTask, deleteTask, calculateProgress, addComment } = useTaskDependencies();
+  const { user } = useAuth();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,6 +60,20 @@ export function useTasks() {
     [updateTask],
   );
 
+  const handleAddComment = useCallback(
+    async (taskId: string, content: string) => {
+      try {
+        const updated = await addComment.execute({ taskId, content });
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+        return updated;
+      } catch (err) {
+        console.error("Failed to add comment", err);
+        throw err;
+      }
+    },
+    [addComment],
+  );
+
   const handleMoveTask = useCallback(
     async (id: string, newStatus: TaskStatus) => {
       try {
@@ -85,14 +101,15 @@ export function useTasks() {
   const handleDeleteTask = useCallback(
     async (id: string) => {
       try {
-        await deleteTask.execute(id);
+        await deleteTask.execute(id, user); // Pass user for auth check
         setTasks((prev) => prev.filter((t) => t.id !== id));
       } catch (err) {
         console.error("Failed to delete task", err);
+        alert((err as Error).message);
         throw err;
       }
     },
-    [deleteTask],
+    [deleteTask, user],
   );
 
   return {
@@ -103,6 +120,7 @@ export function useTasks() {
     updateTask: handleUpdateTask,
     moveTask: handleMoveTask,
     deleteTask: handleDeleteTask,
+    addComment: handleAddComment,
     refresh: loadTasks,
   };
 }

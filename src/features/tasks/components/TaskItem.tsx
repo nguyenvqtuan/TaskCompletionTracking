@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Calendar, MoreHorizontal } from "lucide-react";
 import { cn } from "@/shared/utils/cn";
 import { Task } from "@/domain/entities/Task";
@@ -19,8 +20,13 @@ const PRIORITY_STYLES = {
 };
 
 export function TaskItem({ task }: TaskItemProps) {
+  const navigate = useNavigate();
+
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer group flex flex-col">
+    <Card
+      onClick={() => navigate(`/task/${task.id}`)}
+      className="hover:shadow-md transition-shadow cursor-pointer group flex flex-col"
+    >
       <CardHeader className="p-4 pb-3 space-y-2">
         <div className="flex justify-between items-start">
           <Badge

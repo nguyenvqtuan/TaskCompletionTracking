@@ -26,11 +26,17 @@ export class UpdateTask {
       task.changeStatus(input.status);
     }
 
-    // Note: Progress update should arguably be a separate method on Entity or dedicated UseCase
-    // But for strict CRUD wrapping, we might need a way to set it if Entity supports it (Entity currently doesn't)
-    // Correction: My Entity definition earlier didn't include 'progress'.
-    // I should have added 'progress' to the Entity in the previous step.
-    // For now, I will omit progress update here or assume Entity needs an update.
+    if (input.progress !== undefined) {
+      task.setProgress(input.progress);
+    }
+
+    if (input.sprintId !== undefined) {
+      if (input.sprintId === null) {
+        task.removeFromSprint();
+      } else {
+        task.assignToSprint(input.sprintId);
+      }
+    }
 
     return await this.taskRepository.update(task);
   }

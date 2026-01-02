@@ -16,4 +16,5 @@ export interface UpdateTaskDTO {
   priority?: TaskPriority;
   dueDate?: Date | null;
   progress?: number;
+  sprintId?: string | null; // null to unassign
 }

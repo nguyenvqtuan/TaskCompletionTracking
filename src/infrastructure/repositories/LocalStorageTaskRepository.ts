@@ -1,12 +1,18 @@
 import { Task, TaskProps } from "@/domain/entities/Task";
 import { TaskRepository } from "@/application/interfaces/repositories/TaskRepository";
+import { CommentProps } from "@/domain/entities/Comment";
 
 const STORAGE_KEY = "task-clean-arch-db";
 
 // JSON serialization turns Dates into strings
-type StoredTaskProps = Omit<TaskProps, "dueDate" | "createdAt"> & {
+type StoredCommentProps = Omit<CommentProps, "createdAt"> & {
+  createdAt: string;
+};
+
+type StoredTaskProps = Omit<TaskProps, "dueDate" | "createdAt" | "comments"> & {
   dueDate: string | null;
   createdAt: string;
+  comments: StoredCommentProps[];
 };
 
 export class LocalStorageTaskRepository implements TaskRepository {
@@ -64,6 +70,10 @@ export class LocalStorageTaskRepository implements TaskRepository {
       ...raw,
       dueDate: raw.dueDate ? new Date(raw.dueDate) : null,
       createdAt: new Date(raw.createdAt),
+      comments: (raw.comments || []).map((c) => ({
+        ...c,
+        createdAt: new Date(c.createdAt),
+      })),
     });
   }
 }

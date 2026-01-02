@@ -73,26 +73,35 @@ export function TaskList({ columns, onTaskMove, viewMode = "grid" }: TaskListPro
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (!over) return;
+    if (!over) {
+      console.log("Drag ended with no over target");
+      setActiveTask(null);
+      return;
+    }
 
     const taskId = active.id as string;
     const task = active.data.current?.task as Task;
 
     let newStatus = over.id as TaskStatus;
 
-    // If dropped on a task, find that task's status
-    // Flatten columns to search (or search keys)
-    // Optimization: check if over.id is a status key
+    console.log("DragEnd:", { taskId, overId: over.id, currentStatus: task?.status });
+
     if (!Object.values(TaskStatus).includes(newStatus as TaskStatus)) {
       const overTask = Object.values(columns)
         .flat()
         .find((t) => t.id === over.id);
       if (overTask) {
         newStatus = overTask.status;
+        console.log("Dropped on task, resolved status:", newStatus);
+      } else {
+        console.warn("Dropped on unknown target:", over.id);
       }
+    } else {
+      console.log("Dropped on column:", newStatus);
     }
 
     if (task && newStatus && task.status !== newStatus) {
+      console.log("Moving task", taskId, "to", newStatus);
       onTaskMove(taskId, newStatus);
     }
 
