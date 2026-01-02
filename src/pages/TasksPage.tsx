@@ -1,10 +1,13 @@
 import { useTaskBoardViewModel } from "@/features/tasks/view-models/useTaskBoardViewModel";
 import { TaskBoard } from "@/features/tasks/components/TaskBoard";
 import { Plus, Search, SlidersHorizontal } from "lucide-react";
+import { LocalStorageTaskRepository } from "@/features/tasks/repositories/LocalStorageTaskRepository";
+import { useMemo } from "react";
 
 export const TasksPage = () => {
     // 1. Logic Layer (ViewModel)
-    const { columns, isLoading } = useTaskBoardViewModel();
+    const repository = useMemo(() => new LocalStorageTaskRepository(), []);
+    const { columns, isLoading } = useTaskBoardViewModel(repository);
 
     if (isLoading) {
         return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading dashboard...</div>;

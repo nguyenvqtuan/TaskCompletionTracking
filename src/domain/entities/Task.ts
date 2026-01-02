@@ -10,6 +10,7 @@ interface TaskProps {
     priority: TaskPriority;
     dueDate: Date | null;
     createdAt: Date;
+    progress: number;
 }
 
 export class Task {
@@ -32,7 +33,8 @@ export class Task {
             status: TaskStatus.TODO, // New tasks always start as TODO
             priority,
             dueDate,
-            createdAt: new Date()
+            createdAt: new Date(),
+            progress: 0
         });
     }
 
@@ -57,6 +59,13 @@ export class Task {
         this.validate();
     }
 
+    public setProgress(progress: number): void {
+        if (progress < 0 || progress > 100) {
+            throw new ValidationError("Progress must be between 0 and 100");
+        }
+        this.props.progress = progress;
+    }
+
     private validate(): void {
         if (!this.props.title || this.props.title.trim().length < 3) {
             throw new ValidationError("Task title must be at least 3 characters long.");
@@ -71,6 +80,7 @@ export class Task {
     get priority(): TaskPriority { return this.props.priority; }
     get dueDate(): Date | null { return this.props.dueDate; }
     get createdAt(): Date { return this.props.createdAt; }
+    get progress(): number { return this.props.progress; }
 
     // For serialization if needed
     public toJSON(): TaskProps {

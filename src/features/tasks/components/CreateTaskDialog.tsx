@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
-import { Task, TaskPriority, TaskStatus } from "@/features/tasks/types";
+import { Task, TaskPriority } from "@/features/tasks/types";
 
 interface CreateTaskDialogProps {
     onCreate: (task: Omit<Task, 'id' | 'createdAt'>) => void;
@@ -90,8 +90,8 @@ export function CreateTaskDialog({ onCreate }: CreateTaskDialogProps) {
                                         type="button"
                                         onClick={() => setPriority(p)}
                                         className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${priority === p
-                                                ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/20'
-                                                : 'bg-background hover:bg-muted text-muted-foreground'
+                                            ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/20'
+                                            : 'bg-background hover:bg-muted text-muted-foreground'
                                             }`}
                                     >
                                         {p.toUpperCase()}

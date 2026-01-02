@@ -1,19 +1,5 @@
-import { Task, TaskStatus } from "@/features/tasks/types";
-import { TaskCard } from "./TaskCard";
-
-interface TaskListProps {
-    columns: Record<string, Task[]>;
-    onTaskMove: (taskId: string, newStatus: TaskStatus) => void;
-    onProgressUpdate?: (taskId: string, progress: number) => void;
-}
-
-const COLUMN_TITLES: Record<string, string> = {
-    todo: "To Do",
-    in_progress: "In Progress",
-    review: "In Review",
-    done: "Done",
-};
-
+import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
     DndContext,
     DragOverlay,
@@ -26,38 +12,47 @@ import {
     closestCorners,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { SortableTaskCard } from "./SortableTaskCard";
-import { useState } from "react";
-import { createPortal } from "react-dom";
-import { cn } from "@/shared/utils/cn";
+import { useDroppable } from "@dnd-kit/core";
 
-import { ViewMode } from "../view-models/useTaskBoardViewModel";
+import { cn } from "@/shared/utils/cn";
+import { Task } from "../../../domain/entities/Task";
+import { TaskStatus } from "../../../domain/enums/TaskStatus";
+import { TaskItem } from "./TaskItem";
+import { SortableTaskItem } from "./SortableTaskItem";
+
+export type ViewMode = 'grid' | 'list';
 
 interface TaskListProps {
     columns: Record<string, Task[]>;
     onTaskMove: (taskId: string, newStatus: TaskStatus) => void;
+    onProgressUpdate?: (taskId: string, progress: number) => void;
     viewMode?: ViewMode;
 }
 
-// Helper for status colors
+const COLUMN_TITLES: Record<string, string> = {
+    [TaskStatus.TODO]: "To Do",
+    [TaskStatus.IN_PROGRESS]: "In Progress",
+    [TaskStatus.REVIEW]: "In Review",
+    [TaskStatus.DONE]: "Done",
+};
+
 function getStatusColor(status: string) {
     switch (status) {
-        case 'todo': return 'bg-slate-400';
-        case 'in_progress': return 'bg-blue-400';
-        case 'review': return 'bg-amber-400';
-        case 'done': return 'bg-emerald-400';
+        case TaskStatus.TODO: return 'bg-slate-400';
+        case TaskStatus.IN_PROGRESS: return 'bg-blue-400';
+        case TaskStatus.REVIEW: return 'bg-amber-400';
+        case TaskStatus.DONE: return 'bg-emerald-400';
         default: return 'bg-slate-400';
     }
 }
 
 export function TaskList({ columns, onTaskMove, viewMode = 'grid' }: TaskListProps) {
-    // ... existing dnd logic ...
     const [activeTask, setActiveTask] = useState<Task | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 8, // Avoid accidental drags
+                distance: 8,
             },
         })
     );
@@ -68,7 +63,7 @@ export function TaskList({ columns, onTaskMove, viewMode = 'grid' }: TaskListPro
         }
     };
 
-    const onDragOver = (event: DragOverEvent) => { };
+    const onDragOver = (_event: DragOverEvent) => { };
 
     const onDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -81,12 +76,16 @@ export function TaskList({ columns, onTaskMove, viewMode = 'grid' }: TaskListPro
         let newStatus = over.id as TaskStatus;
 
         // If dropped on a task, find that task's status
-        const overTask = Object.values(columns).flat().find(t => t.id === over.id);
-        if (overTask) {
-            newStatus = overTask.status;
+        // Flatten columns to search (or search keys)
+        // Optimization: check if over.id is a status key
+        if (!Object.values(TaskStatus).includes(newStatus as TaskStatus)) {
+            const overTask = Object.values(columns).flat().find(t => t.id === over.id);
+            if (overTask) {
+                newStatus = overTask.status;
+            }
         }
 
-        if (task && newStatus && task.status !== newStatus && COLUMN_TITLES[newStatus]) {
+        if (task && newStatus && task.status !== newStatus) {
             onTaskMove(taskId, newStatus);
         }
 
@@ -95,8 +94,6 @@ export function TaskList({ columns, onTaskMove, viewMode = 'grid' }: TaskListPro
 
     if (viewMode === 'list') {
         const allTasks = Object.values(columns).flat();
-        // Simplified List View - No Drag and Drop currently for list view
-        // or we could wrap it in DndContext if we wanted sorting, but let's keep it simple "Table-like"
         return (
             <div className="flex flex-col gap-3">
                 {allTasks.length === 0 ? (
@@ -146,7 +143,7 @@ export function TaskList({ columns, onTaskMove, viewMode = 'grid' }: TaskListPro
                 <DragOverlay>
                     {activeTask ? (
                         <div className="opacity-80 rotate-2 cursor-grabbing">
-                            <TaskCard task={activeTask} />
+                            <TaskItem task={activeTask} />
                         </div>
                     ) : null}
                 </DragOverlay>,
@@ -155,9 +152,6 @@ export function TaskList({ columns, onTaskMove, viewMode = 'grid' }: TaskListPro
         </DndContext>
     );
 }
-
-// Sub-component for dropping area
-import { useDroppable } from "@dnd-kit/core";
 
 function TaskColumn({ status, tasks }: { status: string, tasks: Task[] }) {
     const { setNodeRef } = useDroppable({
@@ -169,30 +163,23 @@ function TaskColumn({ status, tasks }: { status: string, tasks: Task[] }) {
             ref={setNodeRef}
             className="flex flex-col gap-4 min-h-[500px] min-w-0 bg-muted/5 rounded-xl p-2 outline-none"
         >
-            {/* Column Header */}
             <div className="flex items-center justify-between p-1">
                 <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                     <span className={cn("w-2 h-2 rounded-full", getStatusColor(status))} />
-                    {COLUMN_TITLES[status]}
+                    {COLUMN_TITLES[status] || status}
                 </h2>
                 <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-md font-medium border">
                     {tasks.length}
                 </span>
             </div>
 
-            {/* 
-              SCROLL FIX:
-              - h-full min-h-0 flex-1: allows container to fill space but shrink if needed.
-              - overflow-y-auto: enables internal scroll.
-              - Removed scrollbar-hide to allow users to see they can scroll.
-          */}
             <div className="flex flex-col gap-3 px-1">
                 <SortableContext
                     items={tasks.map(t => t.id)}
                     strategy={verticalListSortingStrategy}
                 >
                     {tasks.map(task => (
-                        <SortableTaskCard key={task.id} task={task} />
+                        <SortableTaskItem key={task.id} task={task} />
                     ))}
                 </SortableContext>
 
@@ -205,13 +192,4 @@ function TaskColumn({ status, tasks }: { status: string, tasks: Task[] }) {
             </div>
         </div>
     );
-    function getStatusColor(status: string) {
-        switch (status) {
-            case 'todo': return 'bg-slate-400';
-            case 'in_progress': return 'bg-blue-400';
-            case 'review': return 'bg-amber-400';
-            case 'done': return 'bg-emerald-400';
-            default: return 'bg-slate-400';
-        }
-    }
 }
