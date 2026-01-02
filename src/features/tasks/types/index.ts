@@ -5,14 +5,13 @@ import { TaskPriority } from "../../../domain/enums/TaskPriority";
 export { Task, TaskStatus, TaskPriority };
 
 export interface TaskFilters {
-    status: TaskStatus | 'all';
-    priority: TaskPriority | 'all';
-    search: string;
+  status: TaskStatus | "all";
+  priority: TaskPriority | "all";
+  search: string;
 }
 
 export interface User {
-    id: string;
-    name: string;
-    avatarUrl?: string;
+  id: string;
+  name: string;
+  avatarUrl?: string;
 }
-

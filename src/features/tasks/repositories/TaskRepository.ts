@@ -1,8 +1,8 @@
 import { Task } from "../../../domain/entities/Task";
 
 export interface TaskRepository {
-    getAll(): Promise<Task[]>;
-    create(task: Task): Promise<Task>;
-    update(task: Task): Promise<Task>;
-    delete(taskId: string): Promise<void>;
+  getAll(): Promise<Task[]>;
+  create(task: Task): Promise<Task>;
+  update(task: Task): Promise<Task>;
+  delete(taskId: string): Promise<void>;
 }

@@ -3,87 +3,103 @@ import { TaskPriority } from "../enums/TaskPriority";
 import { ValidationError } from "../errors/DomainError";
 
 export interface TaskProps {
-    id: string;
-    title: string;
-    description: string;
-    status: TaskStatus;
-    priority: TaskPriority;
-    dueDate: Date | null;
-    createdAt: Date;
-    progress: number;
+  id: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: Date | null;
+  createdAt: Date;
+  progress: number;
 }
 
 export class Task {
-    private constructor(private props: TaskProps) {
-        this.validate();
+  private constructor(private props: TaskProps) {
+    this.validate();
+  }
+
+  // Factory method for creating new tasks
+  // Enforces creation rules (e.g. required title)
+  static create(
+    title: string,
+    description: string = "",
+    priority: TaskPriority = TaskPriority.MEDIUM,
+    dueDate: Date | null = null,
+  ): Task {
+    return new Task({
+      id: crypto.randomUUID(), // In a real app, ID might come from DB or be a ValueObject
+      title,
+      description,
+      status: TaskStatus.TODO, // New tasks always start as TODO
+      priority,
+      dueDate,
+      createdAt: new Date(),
+      progress: 0,
+    });
+  }
+
+  // Method to reconstitute from Persistence/Repository
+  // Bypasses creation defaults (like status=TODO)
+  static reconstitute(props: TaskProps): Task {
+    return new Task(props);
+  }
+
+  // Domain Behaviors
+
+  public changeStatus(newStatus: TaskStatus): void {
+    // Here we could add transition rules
+    // e.g., if (this.props.status === TaskStatus.DONE && newStatus === TaskStatus.TODO) throw ...
+    this.props.status = newStatus;
+  }
+
+  public updateDetails(title: string, description: string, priority: TaskPriority): void {
+    this.props.title = title;
+    this.props.description = description;
+    this.props.priority = priority;
+    this.validate();
+  }
+
+  public setProgress(progress: number): void {
+    if (progress < 0 || progress > 100) {
+      throw new ValidationError("Progress must be between 0 and 100");
     }
+    this.props.progress = progress;
+  }
 
-    // Factory method for creating new tasks
-    // Enforces creation rules (e.g. required title)
-    static create(
-        title: string,
-        description: string = '',
-        priority: TaskPriority = TaskPriority.MEDIUM,
-        dueDate: Date | null = null
-    ): Task {
-        return new Task({
-            id: crypto.randomUUID(), // In a real app, ID might come from DB or be a ValueObject
-            title,
-            description,
-            status: TaskStatus.TODO, // New tasks always start as TODO
-            priority,
-            dueDate,
-            createdAt: new Date(),
-            progress: 0
-        });
+  private validate(): void {
+    if (!this.props.title || this.props.title.trim().length < 3) {
+      throw new ValidationError("Task title must be at least 3 characters long.");
     }
+  }
 
-    // Method to reconstitute from Persistence/Repository
-    // Bypasses creation defaults (like status=TODO)
-    static reconstitute(props: TaskProps): Task {
-        return new Task(props);
-    }
+  // Getters (Immutable access)
+  get id(): string {
+    return this.props.id;
+  }
+  get title(): string {
+    return this.props.title;
+  }
+  get description(): string {
+    return this.props.description;
+  }
+  get status(): TaskStatus {
+    return this.props.status;
+  }
+  get priority(): TaskPriority {
+    return this.props.priority;
+  }
+  get dueDate(): Date | null {
+    return this.props.dueDate;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
+  get progress(): number {
+    return this.props.progress;
+  }
 
-    // Domain Behaviors
-
-    public changeStatus(newStatus: TaskStatus): void {
-        // Here we could add transition rules
-        // e.g., if (this.props.status === TaskStatus.DONE && newStatus === TaskStatus.TODO) throw ...
-        this.props.status = newStatus;
-    }
-
-    public updateDetails(title: string, description: string, priority: TaskPriority): void {
-        this.props.title = title;
-        this.props.description = description;
-        this.props.priority = priority;
-        this.validate();
-    }
-
-    public setProgress(progress: number): void {
-        if (progress < 0 || progress > 100) {
-            throw new ValidationError("Progress must be between 0 and 100");
-        }
-        this.props.progress = progress;
-    }
-
-    private validate(): void {
-        if (!this.props.title || this.props.title.trim().length < 3) {
-            throw new ValidationError("Task title must be at least 3 characters long.");
-        }
-    }
-
-    // Getters (Immutable access)
-    get id(): string { return this.props.id; }
-    get title(): string { return this.props.title; }
-    get description(): string { return this.props.description; }
-    get status(): TaskStatus { return this.props.status; }
-    get priority(): TaskPriority { return this.props.priority; }
-    get dueDate(): Date | null { return this.props.dueDate; }
-    get createdAt(): Date { return this.props.createdAt; }
-    get progress(): number { return this.props.progress; }
-
-    // For serialization if needed
-    public toJSON(): TaskProps {
-        return { ...this.props };
-    }
+  // For serialization if needed
+  public toJSON(): TaskProps {
+    return { ...this.props };
+  }
 }
