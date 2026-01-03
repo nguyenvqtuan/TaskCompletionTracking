@@ -7,10 +7,11 @@ import { CalculateProgress } from "../../application/implement/CalculateProgress
 import { AddComment } from "../../application/implement/AddComment";
 import { GetSprints } from "../../application/implement/GetSprints";
 import { CreateSprint } from "../../application/implement/CreateSprint";
-import { LocalStorageTaskRepository } from "../../infrastructure/repositories/LocalStorageTaskRepository";
-import { LocalStorageSprintRepository } from "../../infrastructure/repositories/LocalStorageSprintRepository";
+import { ApiTaskRepository } from "../../infrastructure/repositories/ApiTaskRepository";
+import { ApiSprintRepository } from "../../infrastructure/repositories/ApiSprintRepository";
 
 import { GetTaskStatistics } from "../../application/implement/GetTaskStatistics";
+import { GetTaskById } from "../../application/implement/GetTaskById";
 
 interface TaskDependencies {
   createTask: CreateTask;
@@ -22,6 +23,7 @@ interface TaskDependencies {
   getSprints: GetSprints;
   createSprint: CreateSprint;
   getTaskStatistics: GetTaskStatistics;
+  getTaskById: GetTaskById;
 }
 
 const TaskDependenciesContext = createContext<TaskDependencies | null>(null);
@@ -38,8 +40,8 @@ export function useTaskDependencies() {
 export function TaskDependenciesProvider({ children }: { children: React.ReactNode }) {
   const dependencies = useMemo(() => {
     // Composition Root: Wiring everything together
-    const taskRepository = new LocalStorageTaskRepository();
-    const sprintRepository = new LocalStorageSprintRepository();
+    const taskRepository = new ApiTaskRepository();
+    const sprintRepository = new ApiSprintRepository();
 
     return {
       createTask: new CreateTask(taskRepository),
@@ -51,6 +53,7 @@ export function TaskDependenciesProvider({ children }: { children: React.ReactNo
       getSprints: new GetSprints(sprintRepository),
       createSprint: new CreateSprint(sprintRepository),
       getTaskStatistics: new GetTaskStatistics(taskRepository),
+      getTaskById: new GetTaskById(taskRepository),
     };
   }, []);
 

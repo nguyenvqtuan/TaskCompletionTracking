@@ -1,5 +1,5 @@
 export enum SprintStatus {
-  PLANNED = "PLANNED",
+  PLANNING = "PLANNING",
   ACTIVE = "ACTIVE",
   COMPLETED = "COMPLETED",
 }
@@ -21,7 +21,7 @@ export class Sprint {
       name,
       startDate,
       endDate,
-      status: SprintStatus.PLANNED,
+      status: SprintStatus.PLANNING,
     });
   }
 

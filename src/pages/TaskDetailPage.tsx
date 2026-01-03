@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
-import { useTasks } from "@/features/tasks/hooks/useTasks";
+import { useTaskDependencies } from "@/app/context/TaskDependenciesContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { TaskPriority } from "@/domain/enums/TaskPriority";
 import { TaskStatus } from "@/domain/enums/TaskStatus";
@@ -12,37 +12,50 @@ import { Task } from "@/domain/entities/Task";
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { tasks, isLoading, updateTask, deleteTask } = useTasks();
+  const { getTaskById, updateTask, deleteTask, addComment } = useTaskDependencies();
   const { user } = useAuth();
   const [task, setTask] = useState<Task | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Local form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>(TaskPriority.MEDIUM);
   const [status, setStatus] = useState<TaskStatus>(TaskStatus.TODO);
+  const [progress, setProgress] = useState(0);
   const [newComment, setNewComment] = useState("");
 
   useEffect(() => {
-    if (tasks.length > 0 && id) {
-      const found = tasks.find((t) => t.id === id);
-      if (found) {
-        setTask(found);
-        setTitle(found.title);
-        setDescription(found.description);
-        setPriority(found.priority);
-        setStatus(found.status);
+    const loadTask = async () => {
+      if (!id) return;
+      setIsLoading(true);
+      try {
+        const found = await getTaskById.execute(id);
+        if (found) {
+          setTask(found);
+          setTitle(found.title);
+          setDescription(found.description);
+          setPriority(found.priority);
+          setStatus(found.status);
+          setProgress(found.progress);
+        }
+      } catch (error) {
+        console.error("Failed to load task", error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-  }, [tasks, id]);
-
-  const { addComment } = useTasks();
+    };
+    loadTask();
+  }, [id, getTaskById]);
 
   const handleSubmitComment = async () => {
     if (!id || !newComment.trim()) return;
     try {
-      await addComment(id, newComment);
+      await addComment.execute({ taskId: id, content: newComment });
       setNewComment("");
+      // Refresh task to see new comment
+      const updated = await getTaskById.execute(id);
+      if (updated) setTask(updated);
     } catch (error) {
       console.error("Failed to add comment", error);
     }
@@ -51,12 +64,14 @@ export function TaskDetailPage() {
   const handleSave = async () => {
     if (!task || !id) return;
     try {
-      await updateTask({
+      await updateTask.execute({
         id,
         title,
         description,
         priority,
         status,
+        progress, // Use state value
+        sprintId: task.sprintId,
       });
       navigate("/");
     } catch (error) {
@@ -67,7 +82,7 @@ export function TaskDetailPage() {
   const handleDelete = async () => {
     if (!id || !confirm("Are you sure you want to delete this task?")) return;
     try {
-      await deleteTask(id);
+      await deleteTask.execute(id);
       navigate("/");
     } catch (error) {
       console.error("Failed to delete", error);
@@ -107,6 +122,32 @@ export function TaskDetailPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          {/* New Progress Field */}
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <label className="text-sm font-medium">Progress</label>
+              <span className="text-sm text-muted-foreground">{progress}%</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                value={progress}
+                onChange={(e) => setProgress(Number(e.target.value))}
+              />
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                className="w-16 text-center"
+                value={progress}
+                onChange={(e) => setProgress(Math.min(100, Math.max(0, Number(e.target.value))))}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
