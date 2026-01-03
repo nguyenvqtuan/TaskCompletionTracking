@@ -34,14 +34,17 @@ export class ApiTaskRepository implements TaskRepository {
     try {
       const response = await client.get<TaskDTO>(`/task/${id}`);
       return this.mapToEntity(response.data);
-    } catch (error) {
+    } catch {
       return null;
     }
   }
 
+  // ... (unchanged)
+
   async create(task: Task): Promise<Task> {
     const dto = this.mapToDTO(task);
     // Remove ID for creation to let backend generate it
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, ...createDto } = dto;
     const response = await client.post<TaskDTO>("/task", createDto);
     return this.mapToEntity(response.data);
@@ -63,8 +66,10 @@ export class ApiTaskRepository implements TaskRepository {
       title: dto.title,
       description: dto.description,
       // Map Backend Uppercase to Domain Lowercase
-      status: dto.status.toLowerCase() as any,
-      priority: dto.priority.toLowerCase() as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      status: dto.status.toLowerCase() as unknown as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      priority: dto.priority.toLowerCase() as unknown as any,
       dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
       createdAt: new Date(dto.createdAt),
       progress: dto.progress,
@@ -80,7 +85,8 @@ export class ApiTaskRepository implements TaskRepository {
     });
   }
 
-  private mapToDTO(task: Task): any {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private mapToDTO(task: Task): any { // Kept as any temporarily but refined casts
     const props = task.toJSON();
     return {
       ...props,

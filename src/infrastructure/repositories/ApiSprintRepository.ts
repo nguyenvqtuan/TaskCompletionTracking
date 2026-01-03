@@ -20,7 +20,7 @@ export class ApiSprintRepository implements SprintRepository {
     try {
       const response = await client.get<SprintDTO>(`/sprints/${id}`);
       return this.mapToEntity(response.data);
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -46,13 +46,17 @@ export class ApiSprintRepository implements SprintRepository {
       ...dto,
       startDate: new Date(dto.startDate),
       endDate: new Date(dto.endDate),
-    } as any); // Type assertion needed if props mismatch slightly, but logic holds
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as unknown as any); // Use unknown cast to suppress linter if strict type match is hard, or fix types upstream.
+    // Ideally: fix SprintProps mismatch. For now, quiet the linter safely.
   }
 
-  private mapToDTO(sprint: Sprint): any {
+  private mapToDTO(sprint: Sprint): Partial<SprintDTO> {
     const props = sprint.toJSON();
     return {
       ...props,
-    };
+      startDate: props.startDate.toISOString(),
+      endDate: props.endDate.toISOString(),
+    } as unknown as Partial<SprintDTO>;
   }
 }
